@@ -105,6 +105,20 @@ trait SNatOpMacros extends Macro {
   def gteq[A : c.WeakTypeTag, B : c.WeakTypeTag] = witness[A ^>= B](_ >= _)
   def max[A : c.WeakTypeTag, B : c.WeakTypeTag] = witness[A Max B](_ max _)
   def min[A : c.WeakTypeTag, B : c.WeakTypeTag] = witness[A Min B](_ min _)
+  def pow[A : c.WeakTypeTag, B : c.WeakTypeTag] = witness[A Pow B]((a, b) ⇒ math.pow(a, b).toInt)
+
+  def gcd[A : c.WeakTypeTag, B : c.WeakTypeTag] = witness[A GCD B] {
+    def gcdImpl(a: Int, b: Int): Int = if (b == 0) a.abs else gcdImpl(b, a % b)
+    gcdImpl
+  }
+  def ackermann[A : c.WeakTypeTag, B : c.WeakTypeTag] = witness[A Ack B] {
+    def ack(a: Int, b: Int): Int = (a, b) match {
+      case (0, n) ⇒ n + 1
+      case (m, 0) if (m > 0) ⇒ ack(m - 1, 1)
+      case (m, n) if (m > 0 && n > 0) ⇒ ack(m - 1, ack(m, n - 1))
+    }
+    ack
+  }
 }
 
 trait SNatExpr {
@@ -197,6 +211,30 @@ object Min {
   implicit def apply[A, B] = macro SNatOpMacros.min[A, B]
 
   def apply(a: SNat, b: SNat)(implicit min: a.N Min b.N): (a.N Min b.N) { type Result = min.Result } = min
+}
+
+trait Pow[A, B] extends SNatExpr
+
+object Pow {
+  implicit def apply[A, B] = macro SNatOpMacros.pow[A, B]
+
+  def apply(a: SNat, b: SNat)(implicit pow: a.N Pow b.N): (a.N Pow b.N) { type Result = pow.Result } = pow
+}
+
+trait GCD[A, B] extends SNatExpr
+
+object GCD {
+  implicit def apply[A, B] = macro SNatOpMacros.gcd[A, B]
+
+  def apply(a: SNat, b: SNat)(implicit gcd: a.N GCD b.N): (a.N GCD b.N) { type Result = gcd.Result } = gcd
+}
+
+trait Ack[A, B] extends SNatExpr
+
+object Ack {
+  implicit def apply[A, B] = macro SNatOpMacros.ackermann[A, B]
+
+  def apply(a: SNat, b: SNat)(implicit ack: a.N Ack b.N): (a.N Ack b.N) { type Result = ack.Result } = ack
 }
 
 trait ^==[E, R]
